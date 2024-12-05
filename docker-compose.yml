@@ -1,0 +1,65 @@
+version: '3.9'
+
+services:
+
+  app:
+    build: 
+      context: .
+    command: uvicorn src.main:app --host=0.0.0.0 --reload
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./src:/src/
+      - ./alembic:/alembic/
+    env_file:
+      - ./.env
+    networks:
+      - app-net
+    depends_on:
+      - dev-db
+      - redis
+    restart: always
+    
+
+  dev-db:
+    image: postgres:16.1-alpine3.19
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - devdb-volume:/var/lib/postgresql/data
+    networks:
+      - app-net
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin_container
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8080:80"
+    depends_on:
+      - dev-db
+    networks:
+      - app-net
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-volume:/data
+    networks:
+      - app-net
+
+
+name: auth
+volumes:
+  devdb-volume:
+  redis-volume:
+networks:
+  app-net:
